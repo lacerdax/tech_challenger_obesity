@@ -1,0 +1,35 @@
+{
+  "final_model": "RandomForest (tuned)",
+  "accuracy": 0.933806146572104,
+  "best_params_if_rf": {
+    "model__max_depth": null,
+    "model__min_samples_leaf": 1,
+    "model__min_samples_split": 2
+  },
+  "random_state": 42,
+  "target": "Obesity",
+  "num_features": [
+    "Age",
+    "Height",
+    "Weight",
+    "FCVC",
+    "NCP",
+    "CH2O",
+    "FAF",
+    "TUE"
+  ],
+  "cat_features": [
+    "Gender",
+    "family_history",
+    "FAVC",
+    "CAEC",
+    "SMOKE",
+    "SCC",
+    "CALC",
+    "MTRANS"
+  ],
+  "dataset_shape": [
+    2111,
+    17
+  ]
+}
