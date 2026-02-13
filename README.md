@@ -184,10 +184,6 @@ Projeto desenvolvido como parte do **Tech Challenge – Fase 04**
 Pós-Graduação em Análise de Dados – FIAP
 
 ```
-
----
 Lucas Lacerda
 
-
-Você está com um projeto **bem acima da média**.
 ```
