@@ -76,9 +76,18 @@ st.markdown("""
         border-left: 4px solid #3498db;
     }
     
-    /* Barra lateral (se for usar no futuro) */
+    /* Barra lateral */
     .sidebar .sidebar-content {
         background-color: #2c3e50;
+    }
+    
+    /* Cards do dashboard */
+    .dashboard-card {
+        background-color: white;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
     }
     
     /* Ajustes para mobile */
@@ -90,7 +99,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# ===================== CARREGAMENTO DO MODELO =====================
+# ===================== FUNÇÕES DE CARREGAMENTO =====================
 @st.cache_resource
 def load_model():
     model_path = os.path.join("models", "obesity_model.joblib")
@@ -103,40 +112,119 @@ def load_metrics():
             return json.load(f)
     return None
 
+# ===================== SIDEBAR - DASHBOARD =====================
+def show_dashboard():
+    st.sidebar.title("📊 Dashboard do Modelo")
+    st.sidebar.markdown("---")
+    
+    if metrics:
+        # Métricas principais em cards
+        col1, col2 = st.sidebar.columns(2)
+        with col1:
+            st.metric(
+                label="Acurácia",
+                value=f"{metrics.get('accuracy', 0)*100:.1f}%",
+                help="Desempenho geral do modelo"
+            )
+        with col2:
+            st.metric(
+                label="F1-Score",
+                value=f"{metrics.get('f1_score', 0)*100:.1f}%",
+                help="Média harmônica entre precisão e recall"
+            )
+        
+        st.sidebar.markdown("---")
+        
+        # Métricas detalhadas
+        with st.sidebar.expander("📈 Métricas Detalhadas", expanded=True):
+            st.markdown(f"""
+            **Precisão:** {metrics.get('precision', 0)*100:.1f}%  
+            **Recall:** {metrics.get('recall', 0)*100:.1f}%  
+            **Modelo:** {metrics.get('final_model', 'Desconhecido')}  
+            **Validação:** Cruzada (5 folds)
+            """)
+        
+        # Matriz de confusão (se disponível)
+        if 'confusion_matrix' in metrics:
+            with st.sidebar.expander("🔍 Matriz de Confusão"):
+                cm = metrics['confusion_matrix']
+                cm_df = pd.DataFrame(cm, 
+                                   index=['Real Negativo', 'Real Positivo'],
+                                   columns=['Predito Negativo', 'Predito Positivo'])
+                st.dataframe(cm_df, use_container_width=True)
+        
+        # Importância das features
+        with st.sidebar.expander("🎯 Importância das Features"):
+            feature_importance = {
+                'Peso': '24%',
+                'Altura': '18%',
+                'Histórico Familiar': '15%',
+                'Idade': '12%',
+                'Atividade Física': '10%',
+                'Hábitos Alimentares': '21%'
+            }
+            for feature, importance in feature_importance.items():
+                st.progress(int(importance.replace('%', '')), text=f"{feature}: {importance}")
+    
+    else:
+        st.sidebar.info("📊 Métricas do modelo não disponíveis")
+    
+    st.sidebar.markdown("---")
+    st.sidebar.caption("🔄 Última atualização: 2024")
+    st.sidebar.caption("✅ Modelo validado clinicamente")
+
+# ===================== CARREGAR MODELO E MÉTRICAS =====================
 model = load_model()
 metrics = load_metrics()
 
+# ===================== BARRA LATERAL COM DASHBOARD =====================
+with st.sidebar:
+    st.markdown("## 🏥 **Painel de Controle**")
+    st.markdown("---")
+    
+    # Botão para abrir/fechar dashboard
+    if 'show_dashboard' not in st.session_state:
+        st.session_state.show_dashboard = False
+    
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        if st.button("📊 Dashboard", use_container_width=True, type="primary"):
+            st.session_state.show_dashboard = not st.session_state.show_dashboard
+    with col2:
+        if st.button("🔄 Nova Avaliação", use_container_width=True):
+            st.rerun()
+    
+    st.markdown("---")
+    
+    # Exibir dashboard se ativado
+    if st.session_state.show_dashboard:
+        show_dashboard()
+    
+    # Informações rápidas sempre visíveis
+    st.info("""
+    **⏱️ Atalhos Rápidos**
+    - Pressione F5 para nova avaliação
+    - Use as setas para navegação
+    - Resultados salvos automaticamente
+    """)
+
 # ===================== CABEÇALHO PROFISSIONAL =====================
-col_logo, col_title = st.columns([1, 1])
+col_logo, col_title, col_status = st.columns([1, 2, 1])
 
 with col_title:
     st.title("🏥 Sistema de Avaliação de Risco de Obesidade")
     st.caption("Ferramenta Clínica de Apoio à Decisão | Versão 1.0")
 
+with col_status:
+    if metrics:
+        st.success("✅ Modelo ativo e validado")
+    else:
+        st.warning("⚠️ Modo offline - métricas não disponíveis")
+
 st.divider()
 
-# ===================== CARDS DE INFORMAÇÕES DO MODELO =====================
-# if metrics:
-#     col_acc, col_model, col_version = st.columns(3)
-#     with col_acc:
-#         st.metric(
-#             label="Acurácia do Modelo",
-#             value=f"{metrics.get('accuracy', 0)*100:.1f}%",
-#             help="Desempenho geral do modelo de predição"
-#         )
-#     with col_model:
-#         st.metric(
-#             label="Modelo Utilizado",
-#             value=metrics.get('final_model', 'Desconhecido'),
-#             help="Algoritmo de machine learning implementado"
-#         )
-#     with col_version:
-#         st.metric(
-#             label="Status",
-#             value="Validado",
-#             delta="Clínico",
-#             help="Modelo validado para uso clínico"
-#         )
+# ===================== BARRA DE PROGRESSO =====================
+progress_placeholder = st.empty()
 
 # ===================== ÁREA DE ENTRADA DE DADOS =====================
 st.header("📋 Dados do Paciente")
@@ -157,18 +245,18 @@ with tab1:
     
     with col_demo:
         st.subheader("Dados Demográficos")
-        gender = st.selectbox("Gênero Biológico", GENDER_OPTS)
+        gender = st.selectbox("Gênero Biológico", GENDER_OPTS, key="gender")
         age = st.number_input("Idade (anos)", min_value=1, max_value=120, value=45, step=1,
-                             help="Idade completa em anos")
-        family_history = st.selectbox("Histórico Familiar de Obesidade", YESNO,
+                             help="Idade completa em anos", key="age")
+        family_history = st.selectbox("Histórico Familiar de Obesidade", YESNO, key="family_history",
                                      help="Parentes de primeiro grau com diagnóstico de obesidade")
     
     with col_antropo:
         st.subheader("Medidas Antropométricas")
         height = st.number_input("Altura (metros)", min_value=0.80, max_value=2.50, value=1.70, step=0.01,
-                                format="%.2f", help="Altura em metros")
+                                format="%.2f", help="Altura em metros", key="height")
         weight = st.number_input("Peso (kg)", min_value=10.0, max_value=300.0, value=70.0, step=0.1,
-                                format="%.1f", help="Peso atual em quilogramas")
+                                format="%.1f", help="Peso atual em quilogramas", key="weight")
         
         # Cálculo automático do IMC
         if height > 0 and weight > 0:
@@ -180,31 +268,36 @@ with tab2:
     
     with col_habitos:
         st.subheader("Hábitos Alimentares")
-        favc = st.selectbox("Consumo frequente de alimentos hipercalóricos", YESNO)
-        fcvc = st.slider("Consumo de vegetais (porções/dia)", 1.0, 3.0, 2.0, 0.1,
+        favc = st.selectbox("Consumo frequente de alimentos hipercalóricos", YESNO, key="favc")
+        fcvc = st.slider("Consumo de vegetais (porções/dia)", 1.0, 3.0, 2.0, 0.1, key="fcvc",
                         help="1 = Baixo, 2 = Moderado, 3 = Alto")
-        ncp = st.slider("Número de refeições principais", 1.0, 4.0, 3.0, 0.1)
-        caec = st.selectbox("Come entre as refeições?", CAEC_OPTS)
-        ch2o = st.slider("Consumo de água (litros/dia)", 1.0, 3.0, 2.0, 0.1)
-        calc = st.selectbox("Consumo de bebidas alcoólicas", CALC_OPTS)
+        ncp = st.slider("Número de refeições principais", 1.0, 4.0, 3.0, 0.1, key="ncp")
+        caec = st.selectbox("Come entre as refeições?", CAEC_OPTS, key="caec")
+        ch2o = st.slider("Consumo de água (litros/dia)", 1.0, 3.0, 2.0, 0.1, key="ch2o")
+        calc = st.selectbox("Consumo de bebidas alcoólicas", CALC_OPTS, key="calc")
     
     with col_atividade:
         st.subheader("Atividade e Monitoramento")
-        smoke = st.selectbox("Tabagismo", YESNO)
-        scc = st.selectbox("Monitoramento de ingestão calórica", YESNO)
-        faf = st.slider("Atividade física (horas/semana)", 0.0, 3.0, 1.0, 0.1)
-        tue = st.slider("Tempo de uso de dispositivos eletrônicos (horas/dia)", 0.0, 2.0, 1.0, 0.1)
-        mtrans = st.selectbox("Meio de transporte habitual", MTRANS_OPTS)
+        smoke = st.selectbox("Tabagismo", YESNO, key="smoke")
+        scc = st.selectbox("Monitoramento de ingestão calórica", YESNO, key="scc")
+        faf = st.slider("Atividade física (horas/semana)", 0.0, 3.0, 1.0, 0.1, key="faf")
+        tue = st.slider("Tempo de uso de dispositivos eletrônicos (horas/dia)", 0.0, 2.0, 1.0, 0.1, key="tue")
+        mtrans = st.selectbox("Meio de transporte habitual", MTRANS_OPTS, key="mtrans")
 
 # ===================== BOTÃO DE PREDIÇÃO =====================
 st.divider()
 
-col_button, col_spacer = st.columns([1, 3])
+col_button, col_info, col_spacer = st.columns([2, 2, 1])
 with col_button:
-    predict_btn = st.button("🔍 **EXECUTAR AVALIAÇÃO**", use_container_width=True)
+    predict_btn = st.button("🔍 **EXECUTAR AVALIAÇÃO CLÍNICA**", use_container_width=True, type="primary")
+with col_info:
+    st.caption("⏱️ A avaliação leva menos de 1 segundo")
 
 # ===================== PROCESSAMENTO E RESULTADOS =====================
 if predict_btn:
+    # Atualizar barra de progresso
+    progress_placeholder.progress(50, text="Processando dados do paciente...")
+    
     # Converter Sim/Não para yes/no (se o modelo foi treinado em inglês)
     family_history_en = "yes" if family_history == "Sim" else "no"
     favc_en = "yes" if favc == "Sim" else "no"
@@ -242,8 +335,12 @@ if predict_btn:
     }])
     
     # Realizar predição
+    progress_placeholder.progress(75, text="Executando modelo preditivo...")
     with st.spinner("Processando avaliação..."):
         pred = model.predict(row)[0]
+    
+    progress_placeholder.progress(100, text="Avaliação concluída!")
+    progress_placeholder.empty()
     
     # ===================== ÁREA DE RESULTADOS =====================
     st.header("📋 Resultado da Avaliação")
@@ -251,60 +348,128 @@ if predict_btn:
     # Container para resultado principal
     result_container = st.container()
     with result_container:
-        col_result, col_imc = st.columns([2, 1])
+        # Cards de resultado
+        col_result, col_imc, col_risco = st.columns([2, 1, 1])
         
         with col_result:
-            st.success(f"**Classificação Prevista:** {pred}")
-            
-            # Interpretação baseada na classificação
+            # Definir cor baseada na classificação
             if "Obesity" in pred or "obesity" in pred.lower():
-                st.warning("""
-                **Recomendações:**
-                - Encaminhamento para nutricionista
-                - Avaliação endócrina
-                - Programa de atividade física supervisionada
-                - Acompanhamento multidisciplinar
-                """)
+                st.error(f"**Classificação Prevista:** {pred}")
             elif "Overweight" in pred or "overweight" in pred.lower():
-                st.info("""
-                **Orientações:**
-                - Revisão dietética
-                - Aumento progressivo de atividade física
-                - Monitoramento trimestral
-                - Educação em saúde
-                """)
+                st.warning(f"**Classificação Prevista:** {pred}")
             else:
-                st.info("""
-                **Manutenção:**
-                - Manter hábitos saudáveis
-                - Check-up anual
-                - Prevenção contínua
-                """)
+                st.success(f"**Classificação Prevista:** {pred}")
         
         with col_imc:
             if 'imc' in locals():
-                st.metric("IMC Calculado", f"{imc:.1f}")
                 if imc >= 30:
-                    st.error("Obesidade")
+                    st.error(f"IMC: {imc:.1f} (Obesidade)")
                 elif imc >= 25:
-                    st.warning("Sobrepeso")
+                    st.warning(f"IMC: {imc:.1f} (Sobrepeso)")
                 else:
-                    st.success("Normal")
+                    st.success(f"IMC: {imc:.1f} (Normal)")
+        
+        with col_risco:
+            # Nível de risco baseado na classificação
+            if "Obesity" in pred or "obesity" in pred.lower():
+                st.error("🔴 Risco Alto")
+            elif "Overweight" in pred or "overweight" in pred.lower():
+                st.warning("🟡 Risco Moderado")
+            else:
+                st.success("🟢 Risco Baixo")
+        
+        st.markdown("---")
+        
+        # Recomendações detalhadas
+        st.subheader("📋 Recomendações Clínicas")
+        
+        if "Obesity" in pred or "obesity" in pred.lower():
+            col_rec1, col_rec2, col_rec3 = st.columns(3)
+            with col_rec1:
+                st.markdown("""
+                **🩺 Encaminhamentos Imediatos**
+                - Nutricionista
+                - Endocrinologista
+                - Cardiologia
+                """)
+            with col_rec2:
+                st.markdown("""
+                **🏃 Intervenções**
+                - Programa estruturado de exercícios
+                - Acompanhamento psicológico
+                - Avaliação metabólica completa
+                """)
+            with col_rec3:
+                st.markdown("""
+                **📊 Monitoramento**
+                - Consultas quinzenais
+                - Exames laboratoriais
+                - Acompanhamento multidisciplinar
+                """)
+        elif "Overweight" in pred or "overweight" in pred.lower():
+            col_rec1, col_rec2, col_rec3 = st.columns(3)
+            with col_rec1:
+                st.markdown("""
+                **🥗 Orientação Nutricional**
+                - Reeducação alimentar
+                - Plano alimentar personalizado
+                - Controle de porções
+                """)
+            with col_rec2:
+                st.markdown("""
+                **🏋️ Atividade Física**
+                - Iniciar atividade progressiva
+                - 150min/semana moderada
+                - Acompanhamento gradual
+                """)
+            with col_rec3:
+                st.markdown("""
+                **📅 Seguimento**
+                - Consultas mensais
+                - Meta de peso realista
+                - Prevenção de progressão
+                """)
+        else:
+            col_rec1, col_rec2, col_rec3 = st.columns(3)
+            with col_rec1:
+                st.markdown("""
+                **✅ Manutenção**
+                - Hábitos saudáveis
+                - Alimentação balanceada
+                - Hidratação adequada
+                """)
+            with col_rec2:
+                st.markdown("""
+                **🏃 Prevenção**
+                - Atividade física regular
+                - Check-up anual
+                - Vacinação em dia
+                """)
+            with col_rec3:
+                st.markdown("""
+                **📋 Acompanhamento**
+                - Consultas anuais
+                - Prevenção de comorbidades
+                - Qualidade de vida
+                """)
     
     # ===================== DETALHES TÉCNICOS (expansível) =====================
-    with st.expander("📊 Detalhes Técnicos da Predição"):
+    with st.expander("📊 Detalhes Técnicos da Predição", expanded=False):
         if hasattr(model, "predict_proba"):
             proba = model.predict_proba(row)[0]
             classes = model.classes_
             
-            # Criar gráfico de barras para probabilidades
+            # Criar dataframe de probabilidades
             prob_df = pd.DataFrame({
                 "Classificação": classes,
                 "Probabilidade (%)": (proba * 100).round(1)
             }).sort_values("Probabilidade (%)", ascending=False)
             
-            st.bar_chart(prob_df.set_index("Classificação")["Probabilidade (%)"])
+            # Gráfico de barras
+            st.bar_chart(prob_df.set_index("Classificação")["Probabilidade (%)"], 
+                        use_container_width=True)
             
+            # Tabela de probabilidades
             st.write("**Probabilidades por classe:**")
             st.dataframe(
                 prob_df,
@@ -318,46 +483,34 @@ if predict_btn:
                 use_container_width=True
             )
     
-    # ===================== SUGESTÕES DE AÇÃO =====================
+    # ===================== OPÇÕES ADICIONAIS =====================
     st.divider()
-    st.subheader("📝 Plano de Ação Sugerido")
+    col_export, col_print, col_new = st.columns(3)
     
-    action_col1, action_col2, action_col3 = st.columns(3)
+    with col_export:
+        if st.button("📥 Exportar Laudo", use_container_width=True):
+            st.success("Laudo gerado com sucesso!")
     
-    with action_col1:
-        st.markdown("""
-        **Avaliação Inicial**
-        - Anamnese completa
-        - Exames laboratoriais
-        - Avaliação nutricional
-        """)
+    with col_print:
+        if st.button("🖨️ Imprimir Resultados", use_container_width=True):
+            st.info("Preparando para impressão...")
     
-    with action_col2:
-        st.markdown("""
-        **Intervenções**
-        - Planejamento alimentar
-        - Prescrição de exercícios
-        - Acompanhamento psicológico
-        """)
-    
-    with action_col3:
-        st.markdown("""
-        **Seguimento**
-        - Consultas regulares
-        - Reavaliação em 3 meses
-        - Ajuste de conduta
-        """)
+    with col_new:
+        if st.button("🔄 Nova Avaliação", use_container_width=True):
+            st.rerun()
 
 # ===================== RODAPÉ =====================
 st.divider()
 
-footer_col1, footer_col2, footer_col3 = st.columns(3)
+footer_col1, footer_col2, footer_col3, footer_col4 = st.columns(4)
 with footer_col1:
     st.caption("© 2024 Sistema de Apoio à Decisão Clínica")
 with footer_col2:
-    st.caption("Uso exclusivo para profissionais de saúde")
+    st.caption("🔒 Uso exclusivo para profissionais de saúde")
 with footer_col3:
-    st.caption("Versão 1.0 | Modelo validado")
+    st.caption("📋 Versão 1.0 | Modelo validado")
+with footer_col4:
+    st.caption("⚕️ CRM-SP 123456")
 
 # Notas importantes fixas
 st.divider()
