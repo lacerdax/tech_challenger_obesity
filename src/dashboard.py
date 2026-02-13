@@ -9,7 +9,7 @@ st.set_page_config(page_title="Dashboard Analítico - Obesidade", layout="wide")
 # ==============================
 @st.cache_data
 def load_data():
-    df = pd.read_csv("data/Obesity.csv")
+    df = pd.read_csv("data/obesity.csv")
     df.columns = [c.strip() for c in df.columns]
     return df
 
