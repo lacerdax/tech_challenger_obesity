@@ -186,11 +186,8 @@ Pós-Graduação em Análise de Dados – FIAP
 ```
 
 ---
+Lucas Lacerda
 
-Se quiser, no próximo passo eu posso:
-- Ajustar o texto para **linguagem ainda mais acadêmica** (estilo artigo)
-- Criar o **arquivo `.txt/.doc` final com os links** (Streamlit + GitHub + Dashboard)
-- Montar um **roteiro de vídeo de 4–6 minutos** exatamente no tempo que a banca espera
 
 Você está com um projeto **bem acima da média**.
 ```
