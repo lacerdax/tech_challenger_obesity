@@ -153,30 +153,25 @@ def show_dashboard():
                                    index=['Real Negativo', 'Real Positivo'],
                                    columns=['Predito Negativo', 'Predito Positivo'])
                 st.dataframe(cm_df, use_container_width=True)
-        
-        # Importância das features
-        with st.sidebar.expander("🎯 Importância das Features"):
-            feature_importance = {
-                'Peso': '24%',
-                'Altura': '18%',
-                'Histórico Familiar': '15%',
-                'Idade': '12%',
-                'Atividade Física': '10%',
-                'Hábitos Alimentares': '21%'
-            }
-            for feature, importance in feature_importance.items():
-                st.progress(int(importance.replace('%', '')), text=f"{feature}: {importance}")
-    
-    else:
-        st.sidebar.info("📊 Métricas do modelo não disponíveis")
+
     
     st.sidebar.markdown("---")
-    st.sidebar.caption("🔄 Última atualização: 2024")
-    st.sidebar.caption("✅ Modelo validado clinicamente")
 
 # ===================== CARREGAR MODELO E MÉTRICAS =====================
 model = load_model()
 metrics = load_metrics()
+
+# ===================== MAPA DE TRADUÇÃO DAS CLASSES =====================
+CLASS_MAP = {
+    "Insufficient_Weight": "Baixo Peso",
+    "Normal_Weight": "Peso Normal",
+    "Overweight_Level_I": "Sobrepeso Grau I",
+    "Overweight_Level_II": "Sobrepeso Grau II",
+    "Obesity_Type_I": "Obesidade Grau I",
+    "Obesity_Type_II": "Obesidade Grau II",
+    "Obesity_Type_III": "Obesidade Grau III (Mórbida)"
+}
+
 
 # ===================== BARRA LATERAL COM DASHBOARD =====================
 with st.sidebar:
@@ -192,8 +187,10 @@ with st.sidebar:
         if st.button("📊 Dashboard", use_container_width=True, type="primary"):
             st.session_state.show_dashboard = not st.session_state.show_dashboard
     with col2:
-        if st.button("🔄 Nova Avaliação", use_container_width=True):
-            st.rerun()
+        if st.button("🔄 Nova Avaliação"):
+             for key in list(st.session_state.keys()):
+                del st.session_state[key]
+                st.rerun()
     
     st.markdown("---")
     
@@ -215,7 +212,7 @@ col_logo, col_title, col_status = st.columns([1, 4, 1])
 with col_title:
     st.markdown("""
 <div style='text-align: center;'>
-    <h1 style='white-space: nowrap; font-size: 40px; margin-bottom: 5px;'>
+    <h1 style='white-space: wrap; font-size: 40px; margin-bottom: 5px;'>
         🏥 Sistema de Avaliação de Risco de Obesidade
     </h1>
     <p style='color: #6c757d; font-size: 16px; margin-top: 0;'>
@@ -274,19 +271,19 @@ with tab2:
     with col_habitos:
         st.subheader("Hábitos Alimentares")
         favc = st.selectbox("Consumo frequente de alimentos hipercalóricos", YESNO, key="favc")
-        fcvc = st.slider("Consumo de vegetais (porções/dia)", 1.0, 3.0, 2.0, 0.1, key="fcvc",
+        fcvc = st.slider("Consumo de vegetais (porções/dia)", 1.0, 5.0, 2.0, 1.0, key="fcvc",
                         help="1 = Baixo, 2 = Moderado, 3 = Alto")
-        ncp = st.slider("Número de refeições principais", 1.0, 4.0, 3.0, 0.1, key="ncp")
+        ncp = st.slider("Número de refeições principais", 1.0, 3.0, 5.0, 1.0, key="ncp")
         caec = st.selectbox("Come entre as refeições?", CAEC_OPTS, key="caec")
-        ch2o = st.slider("Consumo de água (litros/dia)", 1.0, 3.0, 2.0, 0.1, key="ch2o")
+        ch2o = st.slider("Consumo de água (litros/dia)", 1.0, 20.0, 2.0, 0.5, key="ch2o")
         calc = st.selectbox("Consumo de bebidas alcoólicas", CALC_OPTS, key="calc")
     
     with col_atividade:
         st.subheader("Atividade e Monitoramento")
         smoke = st.selectbox("Tabagismo", YESNO, key="smoke")
         scc = st.selectbox("Monitoramento de ingestão calórica", YESNO, key="scc")
-        faf = st.slider("Atividade física (horas/semana)", 0.0, 3.0, 1.0, 0.1, key="faf")
-        tue = st.slider("Tempo de uso de dispositivos eletrônicos (horas/dia)", 0.0, 2.0, 1.0, 0.1, key="tue")
+        faf = st.slider("Atividade física (horas/semana)", 0.0, 20.0, 1.0, 0.5, key="faf")
+        tue = st.slider("Tempo de uso de dispositivos eletrônicos (horas/dia)", 0.0, 10.0, 1.0, 0.1, key="tue")
         mtrans = st.selectbox("Meio de transporte habitual", MTRANS_OPTS, key="mtrans")
 
 # ===================== BOTÃO DE PREDIÇÃO =====================
@@ -306,7 +303,6 @@ with col_center:
         use_container_width=True,
         type="primary"
     )
-
 # ===================== PROCESSAMENTO E RESULTADOS =====================
 if predict_btn:
     # Atualizar barra de progresso
@@ -352,7 +348,7 @@ if predict_btn:
     progress_placeholder.progress(75, text="Executando modelo preditivo...")
     with st.spinner("Processando avaliação..."):
         pred = model.predict(row)[0]
-    
+    pred_pt = CLASS_MAP.get(pred, pred)
     progress_placeholder.progress(100, text="Avaliação concluída!")
     progress_placeholder.empty()
     
@@ -368,11 +364,14 @@ if predict_btn:
         with col_result:
             # Definir cor baseada na classificação
             if "Obesity" in pred or "obesity" in pred.lower():
-                st.error(f"**Classificação Prevista:** {pred}")
+                st.error(f"**Classificação Prevista:** {pred_pt}")
+
             elif "Overweight" in pred or "overweight" in pred.lower():
-                st.warning(f"**Classificação Prevista:** {pred}")
+                st.warning(f"**Classificação Prevista:** {pred_pt}")
+
             else:
-                st.success(f"**Classificação Prevista:** {pred}")
+                st.success(f"**Classificação Prevista:** {pred_pt}")
+
         
         with col_imc:
             if 'imc' in locals():
@@ -467,51 +466,7 @@ if predict_btn:
                 - Qualidade de vida
                 """)
     
-    # ===================== DETALHES TÉCNICOS (expansível) =====================
-    with st.expander("📊 Detalhes Técnicos da Predição", expanded=False):
-        if hasattr(model, "predict_proba"):
-            proba = model.predict_proba(row)[0]
-            classes = model.classes_
-            
-            # Criar dataframe de probabilidades
-            prob_df = pd.DataFrame({
-                "Classificação": classes,
-                "Probabilidade (%)": (proba * 100).round(1)
-            }).sort_values("Probabilidade (%)", ascending=False)
-            
-            # Gráfico de barras
-            st.bar_chart(prob_df.set_index("Classificação")["Probabilidade (%)"], 
-                        use_container_width=True)
-            
-            # Tabela de probabilidades
-            st.write("**Probabilidades por classe:**")
-            st.dataframe(
-                prob_df,
-                column_config={
-                    "Classificação": "Nível de Obesidade",
-                    "Probabilidade (%)": st.column_config.NumberColumn(
-                        format="%.1f%%"
-                    )
-                },
-                hide_index=True,
-                use_container_width=True
-            )
-    
-    # ===================== OPÇÕES ADICIONAIS =====================
-    st.divider()
-    col_export, col_new = st.columns(2)
-    
-    with col_export:
-        if st.button("📥 Exportar Laudo", use_container_width=True):
-            st.success("Laudo gerado com sucesso!")
-    
-    with col_new:
-        if st.button("🔄 Nova Avaliação", use_container_width=True):
-            st.rerun()
-
-
-
-
+   
 # Notas importantes fixas
 st.divider()
 with st.container():
