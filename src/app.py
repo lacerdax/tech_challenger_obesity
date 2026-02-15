@@ -28,6 +28,7 @@ st.markdown("""
         font-weight: 600;
         border-bottom: 2px solid #3498db;
         padding-bottom: 10px;
+        text-align: center;
     }
     
     /* Cards de entrada */
@@ -209,17 +210,21 @@ with st.sidebar:
     """)
 
 # ===================== CABEÇALHO PROFISSIONAL =====================
-col_logo, col_title, col_status = st.columns([1, 2, 1])
+col_logo, col_title, col_status = st.columns([1, 4, 1])
 
 with col_title:
-    st.title("🏥 Sistema de Avaliação de Risco de Obesidade")
-    st.caption("Ferramenta Clínica de Apoio à Decisão | Versão 1.0")
+    st.markdown("""
+<div style='text-align: center;'>
+    <h1 style='white-space: nowrap; font-size: 40px; margin-bottom: 5px;'>
+        🏥 Sistema de Avaliação de Risco de Obesidade
+    </h1>
+    <p style='color: #6c757d; font-size: 16px; margin-top: 0;'>
+        Ferramenta Clínica de Apoio à Decisão | Versão 1.0
+    </p>
+</div>
+""", unsafe_allow_html=True)
 
-with col_status:
-    if metrics:
-        st.success("✅ Modelo ativo e validado")
-    else:
-        st.warning("⚠️ Modo offline - métricas não disponíveis")
+
 
 st.divider()
 
@@ -287,11 +292,20 @@ with tab2:
 # ===================== BOTÃO DE PREDIÇÃO =====================
 st.divider()
 
-col_button, col_info, col_spacer = st.columns([2, 2, 1])
-with col_button:
-    predict_btn = st.button("🔍 **EXECUTAR AVALIAÇÃO CLÍNICA**", use_container_width=True, type="primary")
-with col_info:
-    st.caption("⏱️ A avaliação leva menos de 1 segundo")
+col_left, col_center, col_right = st.columns([1, 2, 1])
+
+with col_center:
+    st.markdown("""
+    <div style='text-align:center; color:#6c757d; font-size:14px; margin-bottom:8px;'>
+    ⏱️ A avaliação leva menos de 1 segundo
+    </div>
+    """, unsafe_allow_html=True)
+
+    predict_btn = st.button(
+        "🔍 EXECUTAR AVALIAÇÃO CLÍNICA",
+        use_container_width=True,
+        type="primary"
+    )
 
 # ===================== PROCESSAMENTO E RESULTADOS =====================
 if predict_btn:
@@ -485,32 +499,18 @@ if predict_btn:
     
     # ===================== OPÇÕES ADICIONAIS =====================
     st.divider()
-    col_export, col_print, col_new = st.columns(3)
+    col_export, col_new = st.columns(2)
     
     with col_export:
         if st.button("📥 Exportar Laudo", use_container_width=True):
             st.success("Laudo gerado com sucesso!")
     
-    with col_print:
-        if st.button("🖨️ Imprimir Resultados", use_container_width=True):
-            st.info("Preparando para impressão...")
-    
     with col_new:
         if st.button("🔄 Nova Avaliação", use_container_width=True):
             st.rerun()
 
-# ===================== RODAPÉ =====================
-st.divider()
 
-footer_col1, footer_col2, footer_col3, footer_col4 = st.columns(4)
-with footer_col1:
-    st.caption("© 2024 Sistema de Apoio à Decisão Clínica")
-with footer_col2:
-    st.caption("🔒 Uso exclusivo para profissionais de saúde")
-with footer_col3:
-    st.caption("📋 Versão 1.0 | Modelo validado")
-with footer_col4:
-    st.caption("⚕️ CRM-SP 123456")
+
 
 # Notas importantes fixas
 st.divider()
@@ -523,3 +523,14 @@ with st.container():
     4. Sempre considerar **comorbidades** e **fatores individuais**
     5. Manter **confidencialidade** dos dados conforme legislação vigente
     """)
+
+    # ===================== RODAPÉ =====================
+st.divider()
+
+footer_col1, footer_col2, footer_col3, = st.columns(3)
+with footer_col1:
+    st.caption("© Sistema de Apoio à Decisão Clínica")
+with footer_col2:
+    st.caption("🔒 Uso exclusivo para profissionais de saúde")
+with footer_col3:
+    st.caption("📋 Versão 1.0 | Modelo validado")
