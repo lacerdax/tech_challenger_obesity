@@ -53,8 +53,8 @@ def evaluate(model, X_test, y_test, title: str) -> float:
 
 def main():
     # Dataset
-    csv_path = os.path.join("data", "Obesity.csv")
-    target = "Obesity"  # ✅ alvo real do seu CSV
+    csv_path = os.path.join("data", "obesity.csv")
+    target = "obesity"  # ✅ alvo real do seu CSV
 
     if not os.path.exists(csv_path):
         raise FileNotFoundError(
