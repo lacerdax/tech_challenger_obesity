@@ -1,8 +1,3 @@
-Perfeito 👍
-Segue **o arquivo README.md pronto**, exatamente no formato para **copiar e colar** no seu repositório.
-
-> 👉 Dica rápida: copie **tudo**, crie um arquivo chamado `README.md` na raiz do projeto e cole.
-
 ---
 
 ````markdown
