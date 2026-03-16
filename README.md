@@ -1,6 +1,3 @@
----
-
-````markdown
 # Tech Challenge – Fase 04
 
 ## Sistema Preditivo de Obesidade (Machine Learning + Streamlit)
